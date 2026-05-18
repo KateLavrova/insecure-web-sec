@@ -18,7 +18,7 @@ static-scan:
   stage: static
   image: returntocorp/semgrep:latest
   script:
-    - semgrep scan --config /rules/sql-injection.yaml /src --json -o /output/report.json
+    - semgrep scan --config /semgrep-rules/sql-injection.yaml /src --json -o /output/report.json
   artifacts:
     paths:
       - semgrep-report.json
