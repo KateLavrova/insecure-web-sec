@@ -22,7 +22,7 @@ static-scan:
   artifacts:
     paths:
       - semgrep-report.json
-  reports:
+    reports:
       sast: semgrep-reports/report.json
   allow_failure: false
   tags:
