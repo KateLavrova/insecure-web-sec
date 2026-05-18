@@ -1,0 +1,31 @@
+rules:
+  - id: python-sql-injection-flask
+    mode: taint
+    pattern-sources:
+      - pattern: request.form.get(...)
+      - pattern: request.args.get(...)
+      - pattern: request.get_json(...)
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $VAR = $REQUEST[...]
+          - pattern: $REQUEST
+        options:
+          symbolic_propagation: true
+    pattern-sinks:
+      - pattern: |
+          cursor.execute($QUERY, ...)
+      - pattern: |
+          $DB.execute($QUERY, ...)
+      - pattern: |
+          $CONN.execute($QUERY, ...)
+    pattern-sanitizers:
+      - pattern: |
+          $LIB.escape_string(...)
+      - pattern: |
+          $LIB.quote(...)
+    message: |
+      Обнаружена SQL-инъекция.
+    languages:
+      - python
+    severity: ERROR

@@ -1,0 +1,51 @@
+stages:
+  - build
+  - static
+  - dynamic
+  - report
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t insecure-web:latest ./insecure-web
+  tags:
+    - docker
+
+static-scan:
+  stage: static
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep scan --config /rules/sql-injection.yaml /src --json -o /output/report.json
+  artifacts:
+    paths:
+      - semgrep-report.json
+  reports:
+      sast: semgrep-reports/report.json
+  allow_failure: false
+  tags:
+    - docker
+
+dynamic-scan:
+  stage: dynamic
+  image: ghcr.io/zaproxy/zaproxy:stable
+  script:
+    - zap-full-scan.py -t http://insecure-web:80 -r report.html
+  artifacts:
+    paths:
+      - zap-reports/
+    reports:
+      dast: zap-reports/report.html
+  tags:
+    - docker
+
+quality-gate:
+  stage: report
+  image: alpine:latest
+  script:
+    - apk add grep && grep -qi "sql injection" zap-reports/report.html && exit 1 || exit 0
+  needs:                   
+    - static-scan
+    - dynamic-scan
