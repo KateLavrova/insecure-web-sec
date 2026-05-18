@@ -1,12 +1,32 @@
-version: "3.9"
-
 services:
-  insecure-web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    hostname: gitlab
+    container_name: gitlab
     ports:
-      - "5000:5000"
-      - "80:80"
+      - "8888:8888"
+      - "2222:22"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab:8888'
+        nginx['listen_port'] = 8888
+        gitlab_rails['initial_root_password'] = 'toortoor'
     volumes:
-      - ./app:/app
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/logs:/var/log/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    volumes:
+      - ./gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - gitlab
+
+  insecure-web:
+    build: ./insecure-web
+    container_name: insecure-web-app
+    ports:
+      - "8080:80"
